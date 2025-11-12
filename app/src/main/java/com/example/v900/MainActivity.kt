@@ -1,33 +1,28 @@
 package com.example.v900
 
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-
-import com.example.v900.navigation.*
+import com.example.v900.navigation.BottomNavBar
+import com.example.v900.navigation.NavGraph
+import com.example.v900.navigation.NavRoutes
+import com.example.v900.navigation.getBottomNavItems
+import com.example.v900.screens.bar.TopBarWithSections
 import com.example.v900.service.ForegroundCommService
 import com.example.v900.ui.theme.Theme
 
@@ -84,26 +79,16 @@ fun AppMain() {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Boat Control") },
-                actions = {
-                    IconButton(onClick = {
-                        if (currentRoute == NavRoutes.SETTINGS) {
-                            // если уже на экране настроек — закрываем его
-                            navController.popBackStack()
-                        } else {
-                            // иначе открываем
-                            navController.navigate(NavRoutes.SETTINGS) {
-                                launchSingleTop = true
-                            }
-                        }
-                    }) {
-                        Icon(painterResource(R.drawable.menu_settings), contentDescription = "Settings")
+            TopBarWithSections(onSettingsClick = {
+                if (currentRoute == NavRoutes.SETTINGS) {
+                    // если уже на экране настроек — закрываем его
+                    navController.popBackStack()
+                } else {
+                    // иначе открываем
+                    navController.navigate(NavRoutes.SETTINGS) {
+                        launchSingleTop = true
                     }
-
-
-                }
-            )
+                } })
         },
         bottomBar = {
             BottomNavBar(navController = navController, items = items)

@@ -26,11 +26,19 @@ import kotlinx.coroutines.launch
  * В production — DI (Hilt) рекомендуется.
  */
 class ForegroundCommService : Service() {
-    private val TAG = "ForegroundCommService"
+
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private lateinit var prefs: PrefsManager
     private lateinit var server: ServerSocketManager
+
+    // в классе ForegroundCommService
+    private lateinit var deviceRepo: DeviceRepository
+
+    private val TAGS = "ForegroundCommService"
+
+
+
 
     override fun onCreate() {
         super.onCreate()
@@ -59,10 +67,6 @@ class ForegroundCommService : Service() {
         return builder.build()
     }
 
-    // в классе ForegroundCommService
-    private lateinit var deviceRepo: DeviceRepository
-
-    private val TAGS = "ForegroundCommService"
 
     private fun initServer() {
         Log.i(TAGS, "initServer: entering")
@@ -75,10 +79,59 @@ class ForegroundCommService : Service() {
                 port = prefs.getServerPort(),
                 scope = serviceScope,
                 authValidator = { deviceId, token -> true }, // временно permissive
-                onTelemetry = { id, json -> Log.i(TAG, "telemetry callback $id -> $json") },
-                onState = { id, json -> Log.i(TAG, "state callback $id -> $json") },
-                onClientConnected = { id -> Log.i(TAG, "client connected: $id") },
-                onClientDisconnected = { id -> Log.i(TAG, "client disconnected: $id") }
+                onTelemetry = let@{ deviceId, json ->
+                    try {
+                        Log.i(TAGS, "onTelemetry received for $deviceId -> $json")
+                        // optional: token check (json may contain token field)
+                        val token = json.get("token")?.asString
+                        val expected = prefs.getDeviceToken(deviceId)
+                        if (expected != null && expected != token) {
+                            Log.w(TAGS, "Auth failed for $deviceId (token mismatch)")
+                            return@let // or simply return
+                        }
+
+                        // payload may be passed directly by ServerSocketManager as JsonObject payload
+                        // if json here is payload already — pass it directly; else, if full message, extract "payload"
+                        val payload = if (json.has("tacho") || json.has("speed")) {
+                            // already payload object
+                            json
+                        } else {
+                            json.getAsJsonObject("payload") ?: json
+                        }
+
+                        // call repository (suspend), run in a coroutine scope to avoid blocking
+                        // deviceRepo is available as field in the service
+                        serviceScope.launch {
+                            try {
+                                deviceRepo.updateTelemetry(deviceId, payload)
+                                Log.i(TAGS, "DeviceRepository.updateTelemetry called for $deviceId")
+                            } catch (e: Exception) {
+                                Log.e(TAGS, "Failed to update telemetry for $deviceId: ${e.message}", e)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAGS, "onTelemetry processing error: ${e.message}", e)
+                    }
+                },
+
+                onState = { deviceId, json ->
+                    try {
+                        Log.i(TAGS, "onState received for $deviceId -> $json")
+                        val payload = if (json.has("r1") || json.has("r2")) json else json.getAsJsonObject("payload") ?: json
+                        serviceScope.launch {
+                            try {
+                                deviceRepo.updateState(deviceId, payload)
+                                Log.i(TAGS, "DeviceRepository.updateState called for $deviceId")
+                            } catch (e: Exception) {
+                                Log.e(TAGS, "Failed to update state for $deviceId: ${e.message}", e)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAGS, "onState processing error: ${e.message}", e)
+                    }
+                },
+                onClientConnected = { id -> Log.i(TAGS, "client connected: $id") },
+                onClientDisconnected = { id -> Log.i(TAGS, "client disconnected: $id") }
             )
 
             Log.i(TAGS, "About to start ServerSocketManager on port ${prefs.getServerPort()}")

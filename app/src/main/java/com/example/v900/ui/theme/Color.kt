@@ -1,8 +1,23 @@
 package com.example.v900.ui.theme
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
-
+@Composable
+fun VerticalDivider() {
+    Box(
+        modifier = Modifier
+            .height(24.dp)
+            .width(1.dp)
+            .background(Color.White.copy(alpha = 0.8f))
+    )
+}
 var intColorWhite: Long = 0xFFFFFFFF
 val BackgroundColor = Color(0xFF1A1A1F)
 
@@ -13,7 +28,7 @@ val WaterGauge = listOf(Color(0x00FFFFFF), Color(0xFF2F95F3))
 val GrayGauge = listOf(Color(0x00FFFFFF), Color(0xFF38393E))
 
 val Main = Color(0xFF1A1A1F)
-val White = Color(0xFFFFFFFF)
+val White: Color = Color(0xFFFFFFFF)
 val Active = Color(0xFFFFFFFF)
 val NonActive = Color(0x80FFFFFF)
 
