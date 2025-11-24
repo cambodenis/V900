@@ -11,15 +11,10 @@ data class DeviceState(
     val tacho: Double? = null,
     val speed: Double? = null,
     val fuel: Double? = null,
+    val water: Double? = null,
     val relays: Map<String, Boolean> = emptyMap(),
     val lastSeenMillis: Long = System.currentTimeMillis()
 ) {
-    fun copyWithTelemetry(
-        tacho: Double? = this.tacho,
-        speed: Double? = this.speed,
-        fuel: Double? = this.fuel,
-        lastSeenMillis: Long = System.currentTimeMillis()
-    ) = this.copy(tacho = tacho, speed = speed, fuel = fuel, lastSeenMillis = lastSeenMillis)
 
     fun copyWithState(
         relays: Map<String, Boolean> = this.relays,

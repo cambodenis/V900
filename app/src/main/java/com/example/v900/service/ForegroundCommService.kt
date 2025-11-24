@@ -78,7 +78,6 @@ class ForegroundCommService : Service() {
             server = ServerSocketManager(
                 port = prefs.getServerPort(),
                 scope = serviceScope,
-                authValidator = { deviceId, token -> true }, // временно permissive
                 onTelemetry = let@{ deviceId, json ->
                     try {
                         Log.i(TAGS, "onTelemetry received for $deviceId -> $json")
@@ -130,8 +129,7 @@ class ForegroundCommService : Service() {
                         Log.e(TAGS, "onState processing error: ${e.message}", e)
                     }
                 },
-                onClientConnected = { id -> Log.i(TAGS, "client connected: $id") },
-                onClientDisconnected = { id -> Log.i(TAGS, "client disconnected: $id") }
+
             )
 
             Log.i(TAGS, "About to start ServerSocketManager on port ${prefs.getServerPort()}")

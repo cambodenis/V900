@@ -8,6 +8,7 @@ data class DeviceUiModel(
     val tacho: Double?,
     val speed: Double?,
     val fuel: Double?,
+    val water: Double?,
     val relays: Map<String, Boolean>,
     val lastSeenMillis: Long
 )
@@ -17,6 +18,7 @@ fun DeviceState.toUiModel(): DeviceUiModel = DeviceUiModel(
     tacho = tacho,
     speed = speed,
     fuel = fuel,
+    water = water,
     relays = relays,
     lastSeenMillis = lastSeenMillis
 )

@@ -32,15 +32,17 @@ class DeviceRepository() {
             val tacho = payload.get("tacho")?.asDouble
             val speed = payload.get("speed")?.asDouble
             val fuel = payload.get("fuel")?.asDouble
+            val water = payload.get("water")?.asDouble
 
             val current = _devices.value[deviceId]
             val newState = if (current == null) {
-                DeviceState(deviceId = deviceId, tacho = tacho, speed = speed, fuel = fuel, lastSeenMillis = System.currentTimeMillis())
+                DeviceState(deviceId = deviceId, tacho = tacho, speed = speed, fuel = fuel, water = water, lastSeenMillis = System.currentTimeMillis())
             } else {
                 current.copy(
                     tacho = tacho ?: current.tacho,
                     speed = speed ?: current.speed,
                     fuel = fuel ?: current.fuel,
+                    water = water ?: current.fuel,
                     lastSeenMillis = System.currentTimeMillis()
                 )
             }

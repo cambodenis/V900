@@ -64,6 +64,8 @@ fun DeviceCard(dev: DeviceUiModel, onClick: (String) -> Unit = {}) {
             Text(text = "Tacho: ${dev.tacho?.toString() ?: "-"} rpm", color = Color.White)
             Text(text = "Speed: ${dev.speed?.toString() ?: "-"} m/s", color = Color.White)
             Text(text = "Fuel: ${dev.fuel?.toString() ?: "-"}", color = Color.White)
+            Text(text = "Water: ${dev.water?.toString() ?: "-"}", color = Color.White)
+
 
             val relays = if (dev.relays.isEmpty()) "-" else dev.relays.entries.joinToString { "${it.key}:${if (it.value) "ON" else "OFF"}" }
             Text(text = "Relays: $relays", color = Color.White)
