@@ -1,8 +1,6 @@
 // app/src/main/java/com/example/v900/ui/DeviceUiModel.kt
 package com.example.v900.ui
 
-import com.example.v900.data.DeviceState
-
 data class DeviceUiModel(
     val id: String,
     val tacho: Double?,
@@ -13,12 +11,3 @@ data class DeviceUiModel(
     val lastSeenMillis: Long
 )
 
-fun DeviceState.toUiModel(): DeviceUiModel = DeviceUiModel(
-    id = deviceId,
-    tacho = tacho,
-    speed = speed,
-    fuel = fuel,
-    water = water,
-    relays = relays,
-    lastSeenMillis = lastSeenMillis
-)
