@@ -63,9 +63,11 @@ fun DevicesCard(
 @Composable
 fun DeviceButton(
     deviceName: String,
+    deviceColorIndicator: Int,
+    onClick: (String) -> Unit = {}
    // deviceIcon: String,
    // deviceColorIcon: Int,
-    deviceColorIndicator: Int,
+
    // deviceColorAlarm: Int,
    // deviceData: Double,
    // deviceDataUnits: String,

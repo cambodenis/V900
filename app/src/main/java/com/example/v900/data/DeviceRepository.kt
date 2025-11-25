@@ -18,7 +18,7 @@ import kotlinx.coroutines.sync.withLock
  * Здесь реализован простой класс, создайте единственный экземпляр в Service (ниже пример).
  */
 
-class DeviceRepository() {
+class DeviceRepository(prefs: PrefsManager) {
     private val TAG = "DeviceRepository"
     private val mutex = Mutex()
     private val _devices = MutableStateFlow<Map<String, DeviceState>>(emptyMap())
@@ -52,6 +52,21 @@ class DeviceRepository() {
         }
 
 
+    }
+    suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
+        val mgr = com.example.v900.data.AppContainer.getServerManager() ?: return false
+
+        val json = com.google.gson.JsonObject().apply {
+            addProperty("type", "command")
+            addProperty("deviceId", deviceId)
+            addProperty("command", "relay")
+            val payload = com.google.gson.JsonObject()
+            payload.addProperty("relay", relay)
+            payload.addProperty("value", value)
+            add("payload", payload)
+        }
+
+        return mgr.sendToDevice(deviceId, json)
     }
     suspend fun updateState(deviceId: String, payload: JsonObject) {
         try {

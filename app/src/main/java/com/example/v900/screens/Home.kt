@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,6 +40,12 @@ fun HomeScreen(
     val Relay = devices.find { it.id == "Relay" }
     val fuelValue = Sernsor?.fuel ?: 0.0
     val freashWater =Relay?.fresh_water ?: 0.0
+
+    Button(onClick = {
+        AppViewModel.toggleRelay("Relay", "r1", 1)
+    }) {
+        Text("Turn ON Relay 1")
+    }
 
     DeviceButton("freashWater", Orange.toArgb())
     DevicesCard("freashWater",freashWater, "%" )
