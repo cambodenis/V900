@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.v900.ui.theme.Orange
 import com.example.v900.utils.DeviceButton
 import com.example.v900.utils.DevicesCard
+import com.example.v900.utils.RelayController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,9 +43,9 @@ fun HomeScreen(
     val freashWater =Relay?.fresh_water ?: 0.0
 
     Button(onClick = {
-        AppViewModel.toggleRelay("Relay", "r1", 1)
+        RelayController.toggleRelayAsync("Relay", "r1")
     }) {
-        Text("Turn ON Relay 1")
+        Text("Toggle R1")
     }
 
     DeviceButton("freashWater", Orange.toArgb())
