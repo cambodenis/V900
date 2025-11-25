@@ -11,7 +11,8 @@ data class DeviceState(
     val tacho: Double? = null,
     val speed: Double? = null,
     val fuel: Double? = null,
-    val water: Double? = null,
+    val fresh_water: Double? = null,
+    val black_water: Double? = null,
     val relays: Map<String, Boolean> = emptyMap(),
     val lastSeenMillis: Long = System.currentTimeMillis()
 ) {

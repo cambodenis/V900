@@ -33,7 +33,8 @@ class AppViewModel : ViewModel() {
                                 tacho = ds.tacho,
                                 speed = ds.speed,
                                 fuel = ds.fuel,
-                                water = ds.water,
+                                fresh_water = ds.fresh_water,
+                                black_water = ds.black_water,
                                 relays = ds.relays,
                                 lastSeenMillis = ds.lastSeenMillis
                             )

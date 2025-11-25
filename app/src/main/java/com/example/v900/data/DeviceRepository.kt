@@ -1,7 +1,5 @@
 package com.example.v900.data
 
-import android.R.attr.value
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,17 +30,19 @@ class DeviceRepository() {
             val tacho = payload.get("tacho")?.asDouble
             val speed = payload.get("speed")?.asDouble
             val fuel = payload.get("fuel")?.asDouble
-            val water = payload.get("water")?.asDouble
+            val fresh_water = payload.get("fresh_water")?.asDouble
+            val black_water = payload.get("black_water")?.asDouble
 
             val current = _devices.value[deviceId]
             val newState = if (current == null) {
-                DeviceState(deviceId = deviceId, tacho = tacho, speed = speed, fuel = fuel, water = water, lastSeenMillis = System.currentTimeMillis())
+                DeviceState(deviceId = deviceId, tacho = tacho, speed = speed, fuel = fuel, fresh_water = fresh_water, black_water = black_water, lastSeenMillis = System.currentTimeMillis())
             } else {
                 current.copy(
                     tacho = tacho ?: current.tacho,
                     speed = speed ?: current.speed,
                     fuel = fuel ?: current.fuel,
-                    water = water ?: current.fuel,
+                    fresh_water = fresh_water ?: current.fresh_water,
+                    black_water = black_water ?: current.black_water,
                     lastSeenMillis = System.currentTimeMillis()
                 )
             }

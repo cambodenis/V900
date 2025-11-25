@@ -1,21 +1,27 @@
 package com.example.v900.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Card
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.v900.ui.theme.Orange
+import com.example.v900.utils.DeviceButton
+import com.example.v900.utils.DevicesCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -27,6 +33,16 @@ fun HomeScreen(
 ) {
     val devices by AppViewModel.devices.collectAsState()
 
+
+    // Берём первое устройство (или null, если нет данных)
+    val Sernsor = devices.find { it.id == "Sensor" }
+    val Relay = devices.find { it.id == "Relay" }
+    val fuelValue = Sernsor?.fuel ?: 0.0
+    val freashWater =Relay?.fresh_water ?: 0.0
+
+    DeviceButton("freashWater", Orange.toArgb())
+    DevicesCard("freashWater",freashWater, "%" )
+    DevicesCard("fuel",fuelValue, "%" )
     // сохраняем позицию списка между навигациями/пересозданиями
     val listState: LazyListState = rememberSaveable(
         saver = LazyListState.Saver
@@ -34,7 +50,7 @@ fun HomeScreen(
         // начальная позиция
         LazyListState(0)
     }
-
+/*
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -42,12 +58,15 @@ fun HomeScreen(
             .padding(8.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
+
         // используем stable key = device id
         items(items = devices, key = { it.id }) { dev ->
             DeviceCard(dev = dev, onClick = onDeviceClick)
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
+
+ */
 }
 @Composable
 fun DeviceCard(dev: DeviceUiModel, onClick: (String) -> Unit = {}) {
@@ -64,7 +83,8 @@ fun DeviceCard(dev: DeviceUiModel, onClick: (String) -> Unit = {}) {
             Text(text = "Tacho: ${dev.tacho?.toString() ?: "-"} rpm", color = Color.White)
             Text(text = "Speed: ${dev.speed?.toString() ?: "-"} m/s", color = Color.White)
             Text(text = "Fuel: ${dev.fuel?.toString() ?: "-"}", color = Color.White)
-            Text(text = "Water: ${dev.water?.toString() ?: "-"}", color = Color.White)
+            Text(text = "Fresh_Water: ${dev.fresh_water?.toString() ?: "-"}", color = Color.White)
+            Text(text = "Black_Water: ${dev.black_water?.toString() ?: "-"}", color = Color.White)
 
 
             val relays = if (dev.relays.isEmpty()) "-" else dev.relays.entries.joinToString { "${it.key}:${if (it.value) "ON" else "OFF"}" }

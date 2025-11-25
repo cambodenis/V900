@@ -6,7 +6,8 @@ data class DeviceUiModel(
     val tacho: Double?,
     val speed: Double?,
     val fuel: Double?,
-    val water: Double?,
+    val fresh_water: Double?,
+    val black_water: Double?,
     val relays: Map<String, Boolean>,
     val lastSeenMillis: Long
 )

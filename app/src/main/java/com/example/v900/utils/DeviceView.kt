@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,32 +20,24 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sbi.utils.windowWidth
-import com.example.v900.R
 import com.example.v900.ui.theme.White
 
 @Composable
-fun DeviceCard(
+fun DevicesCard(
     deviceName: String,
-    deviceIcon: Int,
-    deviceColorIcon: Int,
-    deviceColorIndicator: Int,
-    deviceColorAlarm: Int,
     deviceData: Double,
     deviceDataUnits: String,
-    deviceDataMin: Double,
-    deviceDataMax: Double,
-    deviceState:Boolean
+
 
 ) {
 
     Column(
         modifier = Modifier
-            .width((windowWidth / 3))
+           // .width((windowWidth / 3))
             .fillMaxHeight()
             .wrapContentHeight()
             .padding(10.dp),
@@ -72,20 +63,20 @@ fun DeviceCard(
 @Composable
 fun DeviceButton(
     deviceName: String,
-    deviceIcon: String,
-    deviceColorIcon: Int,
+   // deviceIcon: String,
+   // deviceColorIcon: Int,
     deviceColorIndicator: Int,
-    deviceColorAlarm: Int,
-    deviceData: Double,
-    deviceDataUnits: String,
-    deviceDataMin: Double,
-    deviceDataMax: Double,
-    deviceState:Boolean
+   // deviceColorAlarm: Int,
+   // deviceData: Double,
+   // deviceDataUnits: String,
+   // deviceDataMin: Double,
+  //  deviceDataMax: Double,
+  //  deviceState:Boolean
     ) {
 
     Column(
         modifier = Modifier
-            .width((windowWidth / 3))
+          //  .width((windowWidth / 3))
             .fillMaxHeight()
             .wrapContentHeight()
             .padding(10.dp).drawBehind {
