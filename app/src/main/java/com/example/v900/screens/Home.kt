@@ -1,33 +1,28 @@
 package com.example.v900.ui
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.paint
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.v900.ui.theme.Orange
-import com.example.v900.utils.DeviceButton
-import com.example.v900.utils.DevicesCard
-import com.example.v900.utils.RelayController
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
+import com.example.v900.R
+import com.example.v900.screens.utils.TankWithAlarm
+import com.example.v900.ui.theme.FuelGauge
+import com.example.v900.ui.theme.GrayGauge
+import com.example.v900.ui.theme.WaterGauge
+import com.example.v900.network.RelayController
 @Composable
 fun HomeScreen(
     AppViewModel: AppViewModel = viewModel(),
@@ -39,72 +34,93 @@ fun HomeScreen(
     // Берём первое устройство (или null, если нет данных)
     val Sernsor = devices.find { it.id == "Sensor" }
     val Relay = devices.find { it.id == "Relay" }
-    val fuelValue = Sernsor?.fuel ?: 0.0
-    val freashWater =Relay?.fresh_water ?: 0.0
+    val fuel = Relay?.fuel ?: 0
+    val fresh = Relay?.fresh_water ?: 0
+    val black = Relay?.black_water ?: 0
 
-    Button(onClick = {
-        RelayController.toggleRelayAsync("Relay", "r1")
-    }) {
-        Text("Toggle R1")
-    }
 
-    DeviceButton("freashWater", Orange.toArgb())
-    DevicesCard("freashWater",freashWater, "%" )
-    DevicesCard("fuel",fuelValue, "%" )
-    // сохраняем позицию списка между навигациями/пересозданиями
-    val listState: LazyListState = rememberSaveable(
-        saver = LazyListState.Saver
-    ) {
-        // начальная позиция
-        LazyListState(0)
-    }
-/*
-    LazyColumn(
-        state = listState,
+    Row(
+
         modifier = Modifier
             .fillMaxSize()
-            .padding(8.dp),
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
+            .padding()
+        // .fillMaxSize()
 
-        // используем stable key = device id
-        items(items = devices, key = { it.id }) { dev ->
-            DeviceCard(dev = dev, onClick = onDeviceClick)
-            Spacer(modifier = Modifier.height(8.dp))
+    ) {
+        Column(
+            modifier = Modifier
+                .padding()
+                .fillMaxHeight()
+                .weight(15f)
+        ) {
+            TankWithAlarm(
+                title = "Fuel",
+                icon = R.drawable.fuel,
+                current = fuel,
+                max = 300,
+                activeColor = FuelGauge,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            //   Spacer(Modifier.height(12.dp))
+
+            TankWithAlarm(
+                title = "Water",
+                icon = R.drawable.fresh_water,
+                current = fresh,
+                max = 360,
+                activeColor = WaterGauge,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            //   Spacer(Modifier.height(12.dp))
+
+            TankWithAlarm(
+                title = "WC",
+                icon = R.drawable.grey_water,
+                current = black,
+                max = 80,
+                activeColor = GrayGauge,
+                modifier = Modifier.fillMaxWidth()
+            )
+
         }
-    }
+        Column(
+            modifier = Modifier
+                .padding()
+                .fillMaxHeight()
+                .weight(70f)
+        ) {
+            Box(
+                modifier = with(Modifier) {
+                    fillMaxSize()
+                        .paint(
+                            // Replace with your image id
+                            painterResource(id = R.drawable.isometry_view),
+                            contentScale = ContentScale.FillBounds
+                        )
 
- */
-}
-@Composable
-fun DeviceCard(dev: DeviceUiModel, onClick: (String) -> Unit = {}) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick(dev.id) }
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+                })
+            {
 
-            Text(text = "ID: ${dev.id}", style = MaterialTheme.typography.titleMedium, color = Color.White)
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(text = "Tacho: ${dev.tacho?.toString() ?: "-"} rpm", color = Color.White)
-            Text(text = "Speed: ${dev.speed?.toString() ?: "-"} m/s", color = Color.White)
-            Text(text = "Fuel: ${dev.fuel?.toString() ?: "-"}", color = Color.White)
-            Text(text = "Fresh_Water: ${dev.fresh_water?.toString() ?: "-"}", color = Color.White)
-            Text(text = "Black_Water: ${dev.black_water?.toString() ?: "-"}", color = Color.White)
-
-
-            val relays = if (dev.relays.isEmpty()) "-" else dev.relays.entries.joinToString { "${it.key}:${if (it.value) "ON" else "OFF"}" }
-            Text(text = "Relays: $relays", color = Color.White)
-
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val lastSeen = try {
-                sdf.format(Date(dev.lastSeenMillis))
-            } catch (_: Exception) {
-                "-"
             }
-            Text(text = "Last seen: $lastSeen", style = MaterialTheme.typography.bodySmall, color = Color.White)
+        }
+        Column(
+            modifier = Modifier
+                .padding()
+                .fillMaxHeight()
+                .weight(15f)
+        ) {
+
+            Button(onClick = {
+                RelayController.toggleRelayAsync("Relay", "r1")
+
+            }) {
+                Text("Toggle R1")
+            }
         }
     }
+
+
+
 }

@@ -8,11 +8,11 @@ package com.example.v900.data
  */
 data class DeviceState(
     val deviceId: String,
-    val tacho: Double? = null,
-    val speed: Double? = null,
-    val fuel: Double? = null,
-    val fresh_water: Double? = null,
-    val black_water: Double? = null,
+    val tacho: Int? = null,
+    val speed: Int? = null,
+    val fuel: Int? = null,
+    val fresh_water: Int? = null,
+    val black_water: Int? = null,
     val relays: Map<String, Boolean> = emptyMap(),
     val lastSeenMillis: Long = System.currentTimeMillis()
 ) {

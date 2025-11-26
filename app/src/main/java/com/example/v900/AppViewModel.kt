@@ -1,6 +1,5 @@
 package com.example.v900.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.v900.data.AppContainer
@@ -49,19 +48,5 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    fun toggleRelay(deviceId: String, relay: String, newValue: Int) {
-        viewModelScope.launch {
-            try {
-                val repo = AppContainer.repoFlow.value ?: return@launch
-                val ok = repo.sendRelayCommand(deviceId, relay, newValue)
-                if (ok) {
-                    Log.i("AppViewModel", "Relay '$relay' toggled for $deviceId → $newValue")
-                } else {
-                    Log.w("AppViewModel", "Failed to send relay command for $deviceId")
-                }
-            } catch (e: Exception) {
-                Log.e("AppViewModel", "toggleRelay error", e)
-            }
-        }
-    }
+
 }

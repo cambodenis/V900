@@ -3,11 +3,11 @@ package com.example.v900.ui
 
 data class DeviceUiModel(
     val id: String,
-    val tacho: Double?,
-    val speed: Double?,
-    val fuel: Double?,
-    val fresh_water: Double?,
-    val black_water: Double?,
+    val tacho: Int?,
+    val speed: Int?,
+    val fuel: Int?,
+    val fresh_water: Int?,
+    val black_water: Int?,
     val relays: Map<String, Boolean>,
     val lastSeenMillis: Long
 )

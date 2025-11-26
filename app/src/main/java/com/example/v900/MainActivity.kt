@@ -21,7 +21,7 @@ import com.example.v900.navigation.BottomNavBar
 import com.example.v900.navigation.NavGraph
 import com.example.v900.navigation.NavRoutes
 import com.example.v900.navigation.getBottomNavItems
-import com.example.v900.screens.bar.TopBarWithSections
+import com.example.v900.screens.TopBarWithSections
 import com.example.v900.service.ForegroundCommService
 import com.example.v900.ui.theme.Theme
 

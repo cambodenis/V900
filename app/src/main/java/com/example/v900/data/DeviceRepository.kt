@@ -26,12 +26,11 @@ class DeviceRepository(prefs: PrefsManager) {
     suspend fun updateTelemetry(deviceId: String, payload: JsonObject) {
 
         mutex.withLock {
-            
-            val tacho = payload.get("tacho")?.asDouble
-            val speed = payload.get("speed")?.asDouble
-            val fuel = payload.get("fuel")?.asDouble
-            val fresh_water = payload.get("fresh_water")?.asDouble
-            val black_water = payload.get("black_water")?.asDouble
+            val tacho = payload.get("tacho")?.asInt
+            val speed = payload.get("speed")?.asInt
+            val fuel = payload.get("fuel")?.asInt
+            val fresh_water = payload.get("fresh_water")?.asInt
+            val black_water = payload.get("black_water")?.asInt
 
             val current = _devices.value[deviceId]
             val newState = if (current == null) {
@@ -54,7 +53,7 @@ class DeviceRepository(prefs: PrefsManager) {
 
     }
     suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
-        val mgr = com.example.v900.data.AppContainer.getServerManager() ?: return false
+        val mgr = AppContainer.getServerManager() ?: return false
 
         val json = com.google.gson.JsonObject().apply {
             addProperty("type", "command")
