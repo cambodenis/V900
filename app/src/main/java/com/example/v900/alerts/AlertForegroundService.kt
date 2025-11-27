@@ -10,7 +10,8 @@ import android.media.ToneGenerator
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.example.v900.network.RelayController
+import com.example.v900.data.AppContainer
+import com.example.v900.network.RelayController.toggleRelay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -112,21 +113,37 @@ class AlertForegroundService : Service() {
 
     private suspend fun pulseRelayAndBeep(type: AlertType) {
         // Простой пример: 2 коротких импульса + пауза
-        val relay = "Relay" // можно выбирать по типу
         val pulseOnMs = 120L
         val pulseOffMs = 150L
         val cycles = 2
+
+        // Пытаемся найти устройство для сигнализации
+        val repo = AppContainer.getRepo()
+        // Берем первое попавшееся устройство, если нет конкретного ID в метаданных
+        // В идеале ID устройства должно приходить в metadata
+        val targetDeviceId = repo?.devices?.value?.keys?.firstOrNull()
+        val relayName = "r1" // Предположим, что сирена на r1
+
         repeat(cycles) {
-            try {
-                RelayController.toggleRelayAsync("Relay", relay)
-            } catch (_: Throwable) {
+            if (targetDeviceId != null) {
+                try {
+                    toggleRelay(targetDeviceId, relayName)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
+            
             toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, pulseOnMs.toInt())
             delay(pulseOnMs)
-            try {
-                RelayController.toggleRelayAsync("Relay", relay)
-            } catch (_: Throwable) {
+
+            if (targetDeviceId != null) {
+                try {
+                    toggleRelay(targetDeviceId, relayName)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
+            
             delay(pulseOffMs)
         }
     }

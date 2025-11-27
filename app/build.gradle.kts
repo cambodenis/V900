@@ -69,6 +69,10 @@ dependencies {
     implementation(libs.androidx.compose.material)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.lifecycle.service)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

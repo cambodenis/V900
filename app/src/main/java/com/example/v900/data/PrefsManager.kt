@@ -1,63 +1,92 @@
 package com.example.v900.data
 
 import android.content.Context
-import androidx.core.content.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore by preferencesDataStore(name = "boat_prefs_v900")
 
 /**
- * PrefsManager — потокобезопасная обёртка SharedPreferences.
- * Расширен для хранения параметров подключения ESP32:
- * - server IP (главный Android сервер / broker IP)
- * - server port
- * - defaultDeviceId (префикс/идентификатор устройства)
- * - defaultDeviceToken
- *
- * Использование: PrefsManager(context).getServerIp() / saveServerIp(...)
+ * PrefsManager — обёртка над DataStore (Preferences).
+ * Все операции теперь асинхронны (suspend / Flow).
  */
-class PrefsManager(context: Context) {
-    private val prefs = context.getSharedPreferences("boat_prefs_v900", Context.MODE_PRIVATE)
-
-    // --- существующие методы (сохраняем) ---
-    fun saveDeviceToken(deviceId: String, token: String) {
-        prefs.edit { putString("token_$deviceId", token) }
-    }
-
-    fun getDeviceToken(deviceId: String): String? = prefs.getString("token_$deviceId", null)
-
-    fun saveRelayState(deviceId: String, relayName: String, value: Boolean) {
-        prefs.edit { putBoolean("${deviceId}_relay_$relayName", value) }
-    }
-
-    fun getRelayState(deviceId: String, relayName: String): Boolean =
-        prefs.getBoolean("${deviceId}_relay_$relayName", false)
-
-    fun saveServerPort(port: Int) { prefs.edit { putInt(KEY_PORT, port) } }
-    fun getServerPort(): Int = prefs.getInt(KEY_PORT, DEFAULT_PORT)
-
-    fun saveLastTelemetry(deviceId: String, key: String, value: String) {
-        prefs.edit { putString("${deviceId}_telemetry_$key", value) }
-    }
-    fun getLastTelemetry(deviceId: String, key: String): String? =
-        prefs.getString("${deviceId}_telemetry_$key", null)
-
-    // --- new: esp connection params ---
-    fun saveServerIp(ip: String) { prefs.edit { putString(KEY_SERVER_IP, ip) } }
-    fun getServerIp(): String = prefs.getString(KEY_SERVER_IP, DEFAULT_SERVER_IP) ?: DEFAULT_SERVER_IP
-
-    fun saveDefaultDeviceId(deviceId: String) { prefs.edit { putString(KEY_DEVICE_ID, deviceId) } }
-    fun getDefaultDeviceId(): String = prefs.getString(KEY_DEVICE_ID, DEFAULT_DEVICE_ID) ?: DEFAULT_DEVICE_ID
-
-    fun saveDefaultDeviceToken(token: String) { prefs.edit { putString(KEY_DEVICE_TOKEN, token) } }
-    fun getDefaultDeviceToken(): String? = prefs.getString(KEY_DEVICE_TOKEN, null)
+class PrefsManager(private val context: Context) {
 
     companion object {
-        private const val KEY_PORT = "server_port"
-        private const val KEY_SERVER_IP = "server_ip"
-        private const val KEY_DEVICE_ID = "default_device_id"
-        private const val KEY_DEVICE_TOKEN = "default_device_token"
+        val KEY_PORT = intPreferencesKey("server_port")
+        val KEY_SERVER_IP = stringPreferencesKey("server_ip")
+        val KEY_DEVICE_ID = stringPreferencesKey("default_device_id")
+        val KEY_DEVICE_TOKEN = stringPreferencesKey("default_device_token")
 
-        // sensible defaults — поменяйте при необходимости
-        private const val DEFAULT_SERVER_IP = "192.168.4.100"
-        private const val DEFAULT_PORT = 12345
-        private const val DEFAULT_DEVICE_ID = "esp01"
+        // Defaults
+        const val DEFAULT_SERVER_IP = "192.168.4.100"
+        const val DEFAULT_PORT = 12345
+        const val DEFAULT_DEVICE_ID = "esp01"
+    }
+
+    // --- Helper to get key for dynamic items ---
+    private fun tokenKey(deviceId: String) = stringPreferencesKey("token_$deviceId")
+    private fun relayKey(deviceId: String, relayName: String) =
+        booleanPreferencesKey("${deviceId}_relay_$relayName")
+
+    private fun telemetryKey(deviceId: String, key: String) =
+        stringPreferencesKey("${deviceId}_telemetry_$key")
+
+    // --- Port ---
+    val serverPortFlow: Flow<Int> = context.dataStore.data.map { it[KEY_PORT] ?: DEFAULT_PORT }
+    suspend fun getServerPort(): Int = serverPortFlow.first()
+    suspend fun saveServerPort(port: Int) {
+        context.dataStore.edit { it[KEY_PORT] = port }
+    }
+
+    // --- Server IP ---
+    val serverIpFlow: Flow<String> =
+        context.dataStore.data.map { it[KEY_SERVER_IP] ?: DEFAULT_SERVER_IP }
+
+    suspend fun getServerIp(): String = serverIpFlow.first()
+    suspend fun saveServerIp(ip: String) {
+        context.dataStore.edit { it[KEY_SERVER_IP] = ip }
+    }
+
+    // --- Device ID/Token ---
+    val defaultDeviceIdFlow: Flow<String> =
+        context.dataStore.data.map { it[KEY_DEVICE_ID] ?: DEFAULT_DEVICE_ID }
+
+    suspend fun getDefaultDeviceId(): String = defaultDeviceIdFlow.first()
+    suspend fun saveDefaultDeviceId(id: String) {
+        context.dataStore.edit { it[KEY_DEVICE_ID] = id }
+    }
+
+    suspend fun saveDefaultDeviceToken(token: String) {
+        context.dataStore.edit { it[KEY_DEVICE_TOKEN] = token }
+    }
+
+    suspend fun getDefaultDeviceToken(): String? =
+        context.dataStore.data.map { it[KEY_DEVICE_TOKEN] }.first()
+
+    // --- Relays ---
+    suspend fun saveRelayState(deviceId: String, relayName: String, value: Boolean) {
+        context.dataStore.edit { it[relayKey(deviceId, relayName)] = value }
+    }
+
+    // Note: getting relay state might be better observed via Flow in UI,
+    // but if needed one-shot:
+    suspend fun getRelayState(deviceId: String, relayName: String): Boolean {
+        return context.dataStore.data.map { it[relayKey(deviceId, relayName)] ?: false }.first()
+    }
+
+    // --- Token per device ---
+    suspend fun saveDeviceToken(deviceId: String, token: String) {
+        context.dataStore.edit { it[tokenKey(deviceId)] = token }
+    }
+
+    suspend fun getDeviceToken(deviceId: String): String? {
+        return context.dataStore.data.map { it[tokenKey(deviceId)] }.first()
     }
 }

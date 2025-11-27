@@ -1,5 +1,6 @@
 package com.example.v900.ui.screens
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ScrollState
@@ -22,10 +23,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.v900.R
 import com.example.v900.data.PrefsManager
+import kotlinx.coroutines.launch
 
 /**
  * SettingsScreen — теперь с несколькими сворачиваемыми разделами.
@@ -42,15 +46,17 @@ import com.example.v900.data.PrefsManager
  * Другие секции показаны как заглушки и тоже разворачиваются по клику.
  *
  * Сохранение:
- * - поля формы сохраняются в SharedPreferences по кнопке Save
- * - значения полей и состояние раскрытия секций сохраняются через rememberSaveable
+ * - поля формы сохраняются в DataStore по кнопке Save (асинхронно)
+ * - значения полей загружаются асинхронно при старте
  * - позиция прокрутки сохраняется при навигации
  */
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val prefs = remember { PrefsManager(context) }
+    val scope = rememberCoroutineScope()
 
     // ScrollState сохраняется между навигациями
     val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
@@ -62,10 +68,19 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
 
     // поля формы — сохраняем промежуточные данные между навигациями
-    var serverIp by rememberSaveable { mutableStateOf(prefs.getServerIp()) }
-    var serverPortText by rememberSaveable { mutableStateOf(prefs.getServerPort().toString()) }
-    var deviceId by rememberSaveable { mutableStateOf(prefs.getDefaultDeviceId()) }
-    var deviceToken by rememberSaveable { mutableStateOf(prefs.getDefaultDeviceToken() ?: "") }
+    // Инициализируем пустыми или дефолтными значениями, реальные подгрузим асинхронно
+    var serverIp by rememberSaveable { mutableStateOf(PrefsManager.DEFAULT_SERVER_IP) }
+    var serverPortText by rememberSaveable { mutableStateOf(PrefsManager.DEFAULT_PORT.toString()) }
+    var deviceId by rememberSaveable { mutableStateOf(PrefsManager.DEFAULT_DEVICE_ID) }
+    var deviceToken by rememberSaveable { mutableStateOf("") }
+
+    // Загрузка данных из DataStore
+    LaunchedEffect(Unit) {
+        serverIp = prefs.getServerIp()
+        serverPortText = prefs.getServerPort().toString()
+        deviceId = prefs.getDefaultDeviceId()
+        deviceToken = prefs.getDefaultDeviceToken() ?: ""
+    }
 
     // валидация порта
     val portError by derivedStateOf {
@@ -147,11 +162,13 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                                     Toast.makeText(context, "Invalid port", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
-                                prefs.saveServerIp(serverIp.trim())
-                                prefs.saveServerPort(port)
-                                prefs.saveDefaultDeviceId(deviceId.trim())
-                                prefs.saveDefaultDeviceToken(deviceToken.trim().ifEmpty { "" })
-                                Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                                scope.launch {
+                                    prefs.saveServerIp(serverIp.trim())
+                                    prefs.saveServerPort(port)
+                                    prefs.saveDefaultDeviceId(deviceId.trim())
+                                    prefs.saveDefaultDeviceToken(deviceToken.trim().ifEmpty { "" })
+                                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             enabled = !portError
                         ) {

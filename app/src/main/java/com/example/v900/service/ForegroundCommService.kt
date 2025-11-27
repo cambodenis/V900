@@ -18,40 +18,28 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-/**
- * ForegroundCommService — держит ServerSocketManager в Foreground.
- * Пакет: com.example.v900.service
- *
- * Интеграция: сервис создаёт PrefsManager и ServerSocketManager, стартует последний.
- * В production — DI (Hilt) рекомендуется.
- */
 class ForegroundCommService : Service() {
-
+    private val TAG = "ForegroundCommService"
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private lateinit var prefs: PrefsManager
     private lateinit var server: ServerSocketManager
-
-    // в классе ForegroundCommService
     private lateinit var deviceRepo: DeviceRepository
-
-    private val TAGS = "ForegroundCommService"
-
-
-
 
     override fun onCreate() {
         super.onCreate()
         prefs = PrefsManager(applicationContext)
         startForegroundServiceNotification()
-        initServer()
 
-
+        serviceScope.launch {
+            initServer()
+        }
     }
 
     private fun startForegroundServiceNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Сервер связи запущен", NotificationManager.IMPORTANCE_LOW)
+            val channel =
+                NotificationChannel(CHANNEL_ID, "Comm Service", NotificationManager.IMPORTANCE_LOW)
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(channel)
         }
@@ -67,106 +55,73 @@ class ForegroundCommService : Service() {
         return builder.build()
     }
 
-
-    private fun initServer() {
-        Log.i(TAGS, "initServer: entering")
+    private suspend fun initServer() {
+        Log.i(TAG, "initServer: entering")
         try {
-            // Инициализируем prefs (уже есть в onCreate)
-            // создаём репозиторий с передачей prefs если конструктор поддерживает
-            deviceRepo = try {
-                // если DeviceRepository(prefs) доступен — используем его
-                DeviceRepository(prefs)
-            } catch (e: Exception) {
-                // fallback: если у вас старый параметрless конструктор
-                Log.w(TAGS, "DeviceRepository(prefs) constructor not available, using default()", e)
-                DeviceRepository(prefs)
-            }
-            AppContainer.setRepo(deviceRepo)
-            Log.i(TAGS, "DeviceRepository created and set in AppContainer")
+            val port = prefs.getServerPort()
 
-            // создаём менеджер с колбэками onTelemetry/onState (ваша логика остаётся)
             server = ServerSocketManager(
-                port = prefs.getServerPort(),
+                port = port,
                 scope = serviceScope,
-                onTelemetry = let@{ deviceId, json ->
-                    try {
-                        Log.i(TAGS, "onTelemetry received for $deviceId -> $json")
-                        val token = json.get("token")?.asString
-                        val expected = prefs.getDeviceToken(deviceId)
-                        if (expected != null && expected != token) {
-                            Log.w(TAGS, "Auth failed for $deviceId (token mismatch)")
-                            return@let
-                        }
-                        val payload = if (json.has("tacho") || json.has("speed")) json else json.getAsJsonObject("payload") ?: json
-
-                        serviceScope.launch {
-                            try {
-                                deviceRepo.updateTelemetry(deviceId, payload)
-                                Log.i(TAGS, "DeviceRepository.updateTelemetry called for $deviceId")
-                            } catch (e: Exception) {
-                                Log.e(TAGS, "Failed to update telemetry for $deviceId: ${e.message}", e)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAGS, "onTelemetry processing error: ${e.message}", e)
+                authValidator = { deviceId, token ->
+                    val expected = prefs.getDeviceToken(deviceId)
+                    if (expected != null && token != expected) {
+                        Log.w(TAG, "Auth failed for $deviceId")
+                        false
+                    } else {
+                        true
                     }
                 },
-
-                onState = { deviceId, json ->
-                    try {
-                        Log.i(TAGS, "onState received for $deviceId -> $json")
-                        val payload = if (json.has("r1") || json.has("r2")) json else json.getAsJsonObject("payload") ?: json
-                        serviceScope.launch {
-                            try {
-                                deviceRepo.updateState(deviceId, payload)
-                                Log.i(TAGS, "DeviceRepository.updateState called for $deviceId")
-                            } catch (e: Exception) {
-                                Log.e(TAGS, "Failed to update state for $deviceId: ${e.message}", e)
-                            }
+                onTelemetry = { id, json ->
+                    Log.d(TAG, "onTelemetry: $id -> $json")
+                    if (::deviceRepo.isInitialized) {
+                        // Извлекаем payload, если он есть (для ESP)
+                        val payload = if (json.has("payload")) {
+                            json.getAsJsonObject("payload")
+                        } else {
+                            json
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAGS, "onState processing error: ${e.message}", e)
+                        deviceRepo.updateTelemetry(id, payload)
                     }
                 },
-
-                // --- добавляем колбэки для регистрации/отключения клиентов ---
-                onClientConnected = { deviceId ->
-                    // atomically increment connected clients
-                    val newCount = AppContainer.connectedClients.value + 1
-                    AppContainer.setConnectedClients(newCount)
-                    Log.i(TAGS, "Client connected: $deviceId; totalClients=$newCount")
+                onState = { id, json ->
+                    Log.d(TAG, "onState: $id -> $json")
+                    if (::deviceRepo.isInitialized) {
+                        // Извлекаем payload, если он есть
+                        val payload = if (json.has("payload")) {
+                            json.getAsJsonObject("payload")
+                        } else {
+                            json
+                        }
+                        deviceRepo.updateState(id, payload)
+                    }
                 },
-                onClientDisconnected = { deviceId ->
-                    val newCount = (AppContainer.connectedClients.value - 1).coerceAtLeast(0)
-                    AppContainer.setConnectedClients(newCount)
-                    Log.i(TAGS, "Client disconnected: $deviceId; totalClients=$newCount")
-                }
+                onClientConnected = { id -> Log.i(TAG, "client connected: $id") },
+                onClientDisconnected = { id -> Log.i(TAG, "client disconnected: $id") }
             )
 
-            // Регистрируем менеджер глобально для отправки команд из repo/viewmodel
-            AppContainer.setServerManager(server)
-            // Отмечаем что сервер запущен
-            AppContainer.setServerRunning(true)
+            deviceRepo = DeviceRepository(server, prefs)
+            AppContainer.setRepo(deviceRepo)
+            Log.i(TAG, "DeviceRepository created and set in AppContainer")
 
-            Log.i(TAGS, "About to start ServerSocketManager on port ${prefs.getServerPort()}")
+            Log.i(TAG, "About to start ServerSocketManager on port $port")
             server.start()
-            Log.i(TAGS, "ServerSocketManager.start() returned — server should be listening now")
+            Log.i(TAG, "ServerSocketManager.start() returned — server should be listening now")
 
         } catch (ex: Exception) {
-            Log.e(TAGS, "initServer failed: ${ex.message}", ex)
+            Log.e(TAG, "initServer failed: ${ex.message}", ex)
         }
     }
 
-    // Не забудьте корректно останавливать сервис и очищать AppContainer
     override fun onDestroy() {
-        try {
-            server.stop()
-        } catch (e: Exception) {
-            Log.w(TAGS, "Error stopping server: ${e.message}", e)
-        }
-        AppContainer.setServerManager(null)
-        AppContainer.setServerRunning(false)
         super.onDestroy()
+        try {
+            if (::server.isInitialized) {
+                server.stop()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping server", e)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

@@ -1,6 +1,7 @@
 package com.example.v900.data
 
 import android.util.Log
+import com.example.v900.network.ServerSocketManager
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,22 +10,17 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * DeviceRepository — централизованное хранилище текущих состояний устройств.
- * - exposes StateFlow<Map<deviceId, DeviceState>>
- * - thread-safe updates
- *
- * Создаётся один экземпляр в приложении (singleton-like). Для простоты — объект с init(context) не нужен:
- * используйте конструктор в ForegroundCommService и передавайте туда ссылку, либо создайте один глобальный экземпляр.
- *
- * Здесь реализован простой класс, создайте единственный экземпляр в Service (ниже пример).
  */
-
-class DeviceRepository(prefs: PrefsManager) {
+class DeviceRepository(
+    private val server: ServerSocketManager,
+    private val prefs: PrefsManager
+) {
     private val TAG = "DeviceRepository"
     private val mutex = Mutex()
     private val _devices = MutableStateFlow<Map<String, DeviceState>>(emptyMap())
     val devices: StateFlow<Map<String, DeviceState>> = _devices
-    suspend fun updateTelemetry(deviceId: String, payload: JsonObject) {
 
+    suspend fun updateTelemetry(deviceId: String, payload: JsonObject) {
         mutex.withLock {
             val tacho = payload.get("tacho")?.asInt
             val speed = payload.get("speed")?.asInt
@@ -34,7 +30,15 @@ class DeviceRepository(prefs: PrefsManager) {
 
             val current = _devices.value[deviceId]
             val newState = if (current == null) {
-                DeviceState(deviceId = deviceId, tacho = tacho, speed = speed, fuel = fuel, fresh_water = fresh_water, black_water = black_water, lastSeenMillis = System.currentTimeMillis())
+                DeviceState(
+                    deviceId = deviceId,
+                    tacho = tacho,
+                    speed = speed,
+                    fuel = fuel,
+                    fresh_water = fresh_water,
+                    black_water = black_water,
+                    lastSeenMillis = System.currentTimeMillis()
+                )
             } else {
                 current.copy(
                     tacho = tacho ?: current.tacho,
@@ -49,27 +53,44 @@ class DeviceRepository(prefs: PrefsManager) {
             newMap[deviceId] = newState
             _devices.value = newMap
         }
-
-
     }
-    suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
-        val mgr = AppContainer.getServerManager() ?: return false
 
-        val json = com.google.gson.JsonObject().apply {
+    suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
+        val json = JsonObject().apply {
             addProperty("type", "command")
             addProperty("deviceId", deviceId)
             addProperty("command", "relay")
-            val payload = com.google.gson.JsonObject()
+            val payload = JsonObject()
             payload.addProperty("relay", relay)
             payload.addProperty("value", value)
             add("payload", payload)
         }
 
-        return mgr.sendToDevice(deviceId, json)
+        // Отправляем команду через server
+        return server.sendCommand(deviceId, json.toString())
     }
+
+    suspend fun toggleRelay(deviceId: String, relay: String, value: Boolean) {
+        // 1. Save state locally in prefs
+        prefs.saveRelayState(deviceId, relay, value)
+
+        // 2. Send command
+        sendRelayCommand(deviceId, relay, if (value) 1 else 0)
+
+        // 3. Update local state for UI
+        mutex.withLock {
+            val current = _devices.value[deviceId]
+            if (current != null) {
+                val updatedRelays = current.relays.toMutableMap()
+                updatedRelays[relay] = value
+                val new = current.copyWithState(relays = updatedRelays)
+                _devices.value = _devices.value.toMutableMap().also { it[deviceId] = new }
+            }
+        }
+    }
+
     suspend fun updateState(deviceId: String, payload: JsonObject) {
         try {
-            // ожидаем payload с ключами реле, например {"r1":1,"r2":0}
             val relays = mutableMapOf<String, Boolean>()
             for ((k, v) in payload.entrySet()) {
                 val asInt = try { v.asInt } catch (_: Exception) { null }
@@ -90,7 +111,5 @@ class DeviceRepository(prefs: PrefsManager) {
         }
     }
 
-    // optional helper to get snapshot
     fun getSnapshot(): Map<String, DeviceState> = _devices.value
-
 }
