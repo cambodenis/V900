@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
  * AppViewModel — безопасно ждёт появления репозитория в AppContainer,
  * затем подписывается на repo.devices и поддерживает _devices.
  */
+
 class AppViewModel : ViewModel() {
     private val _devices = MutableStateFlow<List<DeviceUiModel>>(emptyList())
     val devices: StateFlow<List<DeviceUiModel>> = _devices
