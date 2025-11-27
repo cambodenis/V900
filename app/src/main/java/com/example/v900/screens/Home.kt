@@ -1,5 +1,6 @@
 package com.example.v900.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,16 +47,17 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding()
-        // .fillMaxSize()
 
     ) {
         Column(
             modifier = Modifier
                 .padding()
                 .fillMaxHeight()
-                .weight(15f)
+                .weight(15f),
+            verticalArrangement = Arrangement.Center,
         ) {
             TankLevelWidget(
+                modifier = Modifier.fillMaxWidth(),
                 title = "Fuel",
                 icon = R.drawable.fuel,
                 current = fuel,
@@ -63,11 +65,12 @@ fun HomeScreen(
                 activeColor = FuelGauge,        // примерный цвет заполнения
                 inactiveColor = Color(0xFF2B2B2B),
                 alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
-                modifier = Modifier.fillMaxWidth()
+
             )
 
 
             TankLevelWidget(
+                modifier = Modifier.fillMaxWidth(),
                 title = "Water",
                 icon = R.drawable.fresh_water,
                 current = fresh,
@@ -75,12 +78,12 @@ fun HomeScreen(
                 activeColor = WaterGauge,        // примерный цвет заполнения
                 inactiveColor = Color(0xFF2B2B2B),
                 alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
-                modifier = Modifier.fillMaxWidth()
             )
 
             //   Spacer(Modifier.height(12.dp))
 
             TankLevelWidget(
+                modifier = Modifier.fillMaxWidth(),
                 title = "WC",
                 icon = R.drawable.grey_water,
                 current = black,
@@ -88,7 +91,6 @@ fun HomeScreen(
                 activeColor = GrayGauge,        // примерный цвет заполнения
                 inactiveColor = Color(0xFF2B2B2B),
                 alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
-                modifier = Modifier.fillMaxWidth()
             )
 
         }
