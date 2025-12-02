@@ -20,7 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.v900.R
-import com.example.v900.network.RelayController
+import com.example.v900.data.AppContainer
 import com.example.v900.screens.utils.TankLevelWidget
 import com.example.v900.ui.theme.FuelGauge
 import com.example.v900.ui.theme.GrayGauge
@@ -28,26 +28,22 @@ import com.example.v900.ui.theme.WaterGauge
 
 @Composable
 fun HomeScreen(
-    AppViewModel: AppViewModel = viewModel(),
-    onDeviceClick: (deviceId: String) -> Unit = {}
+    viewModel: AppViewModel = viewModel(),
 ) {
-    val devices by AppViewModel.devices.collectAsState()
+    val repo = AppContainer.getRepo()
+    val devices by viewModel.devices.collectAsState()
+    // Явно указываем тип it, чтобы компилятор мог его вывести
+    val Sensor = devices.find { it: DeviceUiModel -> it.id == "Sensor" }
+    val Relay = devices.find { it: DeviceUiModel -> it.id == "Relay" }
 
-
-    // Берём первое устройство (или null, если нет данных)
-    val Sernsor = devices.find { it.id == "Sensor" }
-    val Relay = devices.find { it.id == "Relay" }
-    val fuel = Relay?.fuel ?: 0
-    val fresh = Relay?.fresh_water ?: 0
-    val black = Relay?.black_water ?: 0
-
+    val fuel = Relay?.fuel?.toInt() ?: 0
+    val fresh = Relay?.fresh_water?.toInt() ?: 0
+    val black = Relay?.black_water?.toInt() ?: 0
 
     Row(
-
         modifier = Modifier
             .fillMaxSize()
             .padding()
-
     ) {
         Column(
             modifier = Modifier
@@ -62,12 +58,10 @@ fun HomeScreen(
                 icon = R.drawable.fuel,
                 current = fuel,
                 max = 300,
-                activeColor = FuelGauge,        // примерный цвет заполнения
+                activeColor = FuelGauge,
                 inactiveColor = Color(0xFF2B2B2B),
-                alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
-
+                alarmIconColor = Color(0xFFFFC107),
             )
-
 
             TankLevelWidget(
                 modifier = Modifier.fillMaxWidth(),
@@ -75,12 +69,10 @@ fun HomeScreen(
                 icon = R.drawable.fresh_water,
                 current = fresh,
                 max = 360,
-                activeColor = WaterGauge,        // примерный цвет заполнения
+                activeColor = WaterGauge,
                 inactiveColor = Color(0xFF2B2B2B),
-                alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
+                alarmIconColor = Color(0xFFFFC107),
             )
-
-            //   Spacer(Modifier.height(12.dp))
 
             TankLevelWidget(
                 modifier = Modifier.fillMaxWidth(),
@@ -88,12 +80,12 @@ fun HomeScreen(
                 icon = R.drawable.grey_water,
                 current = black,
                 max = 80,
-                activeColor = GrayGauge,        // примерный цвет заполнения
+                activeColor = GrayGauge,
                 inactiveColor = Color(0xFF2B2B2B),
-                alarmIconColor = Color(0xFFFFC107),      // цвет иконки при тревоге
+                alarmIconColor = Color(0xFFFFC107),
             )
-
         }
+
         Column(
             modifier = Modifier
                 .padding()
@@ -104,32 +96,26 @@ fun HomeScreen(
                 modifier = with(Modifier) {
                     fillMaxSize()
                         .paint(
-                            // Replace with your image id
                             painterResource(id = R.drawable.isometry_view),
                             contentScale = ContentScale.FillBounds
                         )
-
                 })
             {
-
             }
         }
+
         Column(
             modifier = Modifier
                 .padding()
                 .fillMaxHeight()
                 .weight(15f)
         ) {
+            val r1State = Relay?.relays?.get("r1") ?: false
 
-            Button(onClick = {
-                RelayController.toggleRelayAsync("Relay", "r1")
-
-            }) {
-                Text("Toggle R1")
+            Button(onClick = { viewModel.toggleRelay("Relay", "r1", !r1State) })
+            {
+                Text(if (r1State) "R1 ON" else "R1 OFF")
             }
         }
     }
-
-
-
 }

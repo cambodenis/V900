@@ -11,7 +11,6 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.v900.data.AppContainer
-import com.example.v900.network.RelayController.toggleRelay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,7 +28,7 @@ class AlertForegroundService : Service() {
         const val ACTION_TRIGGER = "ACTION_TRIGGER"
         const val EXTRA_ALERT_TYPE = "extra_alert_type"
         const val EXTRA_MESSAGE = "extra_message"
-        const val EXTRA_METADATA = "extra_metadata" // json or simple string
+        const val EXTRA_METADATA = "extra_metadata"
 
         fun trigger(
             context: Context,
@@ -43,7 +42,6 @@ class AlertForegroundService : Service() {
                 putExtra(EXTRA_MESSAGE, message)
                 putExtra(EXTRA_METADATA, metadata)
             }
-            // Use startForegroundService for API >= 26
             ContextCompat.startForegroundService(context, intent)
         }
     }
@@ -51,7 +49,7 @@ class AlertForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         NotificationHelper.createChannel(this)
-        toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 80)
+        toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100) // Громкость 100
     }
 
     @SuppressLint("FullScreenIntentPolicy")
@@ -70,7 +68,7 @@ class AlertForegroundService : Service() {
                     AlertType.GENERAL
                 }
 
-                // FULLSCREEN INTENT — исправлено
+                // Создаем FullScreenIntent для Activity
                 val fullScreenIntent = Intent(this, AlertActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -88,19 +86,23 @@ class AlertForegroundService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT or getMutableFlag()
                 )
 
-                // foreground notification
+                // Создаем уведомление с использованием NotificationHelper (ID канала v2)
                 val notif = NotificationCompat.Builder(this, NotificationHelper.CHANNEL_ID)
-                    .setContentTitle("Сигнал: ${type.displayName}")
+                    .setContentTitle("ТРЕВОГА: ${type.displayName}")
                     .setContentText(message)
-                    .setSmallIcon(com.example.v900.R.drawable.alarm)
+                    .setSmallIcon(com.example.v900.R.drawable.alarm) // Убедитесь, что ресурс существует
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
-                    .setFullScreenIntent(fullScreenPendingIntent, true)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setFullScreenIntent(
+                        fullScreenPendingIntent,
+                        true
+                    ) // ВАЖНО: true = высокая срочность
                     .build()
 
                 startForeground(NotificationHelper.NOTIF_ID_FOREGROUND, notif)
 
-                // реле + звук
+                // Запускаем пульсацию реле и звук
                 scope.launch {
                     pulseRelayAndBeep(type)
                 }
@@ -112,33 +114,33 @@ class AlertForegroundService : Service() {
 
 
     private suspend fun pulseRelayAndBeep(type: AlertType) {
-        // Простой пример: 2 коротких импульса + пауза
-        val pulseOnMs = 120L
-        val pulseOffMs = 150L
-        val cycles = 2
+        val pulseOnMs = 500L
+        val pulseOffMs = 500L
+        val cycles = 5 // Повторяем 5 раз
 
-        // Пытаемся найти устройство для сигнализации
         val repo = AppContainer.getRepo()
-        // Берем первое попавшееся устройство, если нет конкретного ID в метаданных
-        // В идеале ID устройства должно приходить в metadata
-        val targetDeviceId = repo?.devices?.value?.keys?.firstOrNull()
-        val relayName = "r1" // Предположим, что сирена на r1
+        // Берем ID устройства из репозитория (первое попавшееся или конкретное)
+        val targetDeviceId = repo?.getSnapshot()?.keys?.firstOrNull()
+        // Какое реле использовать для сирены? Например, "r1"
+        val relayName = "r1" 
 
         repeat(cycles) {
+            // ВКЛЮЧИТЬ
             if (targetDeviceId != null) {
                 try {
-                    toggleRelay(targetDeviceId, relayName)
+                    repo.toggleRelay(targetDeviceId, relayName, true)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
-            
-            toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, pulseOnMs.toInt())
+
+            toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 300)
             delay(pulseOnMs)
 
+            // ВЫКЛЮЧИТЬ
             if (targetDeviceId != null) {
                 try {
-                    toggleRelay(targetDeviceId, relayName)
+                    repo.toggleRelay(targetDeviceId, relayName, false)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -146,6 +148,9 @@ class AlertForegroundService : Service() {
             
             delay(pulseOffMs)
         }
+
+        // После завершения цикла можно остановить сервис или оставить висеть уведомление
+        // stopSelf() // Если нужно остановить сервис автоматически
     }
 
     override fun onDestroy() {
@@ -165,8 +170,8 @@ class AlertForegroundService : Service() {
 }
 
 enum class AlertType(val displayName: String) {
-    TANK_LEVEL("Tank level"),
-    MAINTENANCE("Maintenance"),
-    ESP_ALARM("ESP Alarm"),
-    GENERAL("General")
+    TANK_LEVEL("Уровень в баке"),
+    MAINTENANCE("Обслуживание"),
+    ESP_ALARM("ESP Тревога"),
+    GENERAL("Общая тревога")
 }

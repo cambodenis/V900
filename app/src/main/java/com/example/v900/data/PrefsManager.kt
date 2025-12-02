@@ -25,7 +25,7 @@ class PrefsManager(private val context: Context) {
         val KEY_DEVICE_TOKEN = stringPreferencesKey("default_device_token")
 
         // Defaults
-        const val DEFAULT_SERVER_IP = "192.168.4.100"
+        const val DEFAULT_SERVER_IP = "192.168.100.5"
         const val DEFAULT_PORT = 12345
         const val DEFAULT_DEVICE_ID = "esp01"
     }

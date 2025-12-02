@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.v900.data.AppContainer
 import com.example.v900.data.DeviceRepository
+import com.example.v900.data.DeviceState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
@@ -27,7 +29,7 @@ class AppViewModel : ViewModel() {
                     _devices.value = emptyList()
                 } else {
                     // Подписываемся на Flow<Map<String, DeviceState>>
-                    repo.devices.collect { map: Map<String, com.example.v900.data.DeviceState> ->
+                    repo.devices.collect { map: Map<String, DeviceState> ->
                         // Явно преобразуем DeviceState -> DeviceUiModel, чтобы избежать ошибок вывода типов
                         val list: List<DeviceUiModel> = map.values.map { ds ->
                             DeviceUiModel(
@@ -41,7 +43,6 @@ class AppViewModel : ViewModel() {
                                 lastSeenMillis = ds.lastSeenMillis
                             )
                         }.sortedBy { ui -> ui.id }
-
                         _devices.value = list
                     }
                 }
@@ -49,5 +50,26 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    fun toggleRelay(deviceId: String, relayKey: String, newState: Boolean) {
+        // TODO: Add your logic here to send the command to the device
+        // For example:
+        // repository.sendRelayCommand(deviceId, relayKey, newState)
 
+        // If you are just testing UI and want to update the state locally immediately:
+
+        _devices.update { currentList ->
+            currentList.map { device ->
+                if (device.id == deviceId) {
+                    // Create a new map with the updated relay value
+                    val updatedRelays = device.relays.toMutableMap().apply {
+                        this[relayKey] = newState
+                    }
+                    device.copy(relays = updatedRelays)
+                } else {
+                    device
+                }
+            }
+        }
+
+    }
 }

@@ -87,7 +87,7 @@ class ServerSocketManager(
                 val din = DataInputStream(bis)
                 val dout = DataOutputStream(bos)
 
-                // 1. Handshake: Читаем строку до \n вручную, чтобы не испортить буфер для бинарных данных
+                // 1. Handshake: Читаем строку до \n вручную
                 val firstLine = readLineStrict(din)
 
                 if (firstLine.isEmpty()) {
@@ -118,11 +118,22 @@ class ServerSocketManager(
                 // 2. Auth
                 if (!authValidator(deviceId, token)) {
                     Log.w(TAG, "Auth failed for $deviceId from $remote")
+                    // Можно отправить ответ об ошибке
+                    sendJsonFramed(
+                        dout,
+                        gson.toJson(mapOf("type" to "auth_response", "status" to "denied"))
+                    )
                     socket.close()
                     return@launch
                 }
 
                 Log.i(TAG, "Client authenticated: $deviceId ($type)")
+
+                // Отправляем успешный ответ (Framed), так как ESP может его ждать
+                sendJsonFramed(
+                    dout,
+                    gson.toJson(mapOf("type" to "auth_response", "status" to "ok"))
+                )
 
                 // 3. Register and Loop
                 registerClient(deviceId, socket, din, dout)
@@ -161,6 +172,20 @@ class ServerSocketManager(
             }
         }
         return baos.toString("UTF-8")
+    }
+
+    // Вспомогательный метод для отправки framed сообщения напрямую в поток
+    private fun sendJsonFramed(output: DataOutputStream, json: String) {
+        try {
+            val bytes = json.toByteArray(Charsets.UTF_8)
+            synchronized(output) {
+                output.writeInt(bytes.size)
+                output.write(bytes)
+                output.flush()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending framed response", e)
+        }
     }
 
     fun stop() {
