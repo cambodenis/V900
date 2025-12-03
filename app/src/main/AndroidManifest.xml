@@ -49,6 +49,7 @@
         </activity>
 
         <!-- Activity для тревоги (FullScreenIntent) -->
+        <!--
         <activity
             android:name=".alerts.AlertActivity"
             android:excludeFromRecents="true"
@@ -58,6 +59,7 @@
             android:taskAffinity=""
             android:theme="@style/Theme.V900"
             android:turnScreenOn="true" />
+            -->
 
         <!-- Ресивер для автозапуска при старте телефона -->
         <receiver

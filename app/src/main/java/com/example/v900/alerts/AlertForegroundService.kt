@@ -69,6 +69,7 @@ class AlertForegroundService : Service() {
                 }
 
                 // Создаем FullScreenIntent для Activity
+                /*
                 val fullScreenIntent = Intent(this, AlertActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -86,6 +87,8 @@ class AlertForegroundService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT or getMutableFlag()
                 )
 
+                 */
+
                 // Создаем уведомление с использованием NotificationHelper (ID канала v2)
                 val notif = NotificationCompat.Builder(this, NotificationHelper.CHANNEL_ID)
                     .setContentTitle("ТРЕВОГА: ${type.displayName}")
@@ -94,10 +97,13 @@ class AlertForegroundService : Service() {
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    /*
                     .setFullScreenIntent(
                         fullScreenPendingIntent,
                         true
                     ) // ВАЖНО: true = высокая срочность
+
+                     */
                     .build()
 
                 startForeground(NotificationHelper.NOTIF_ID_FOREGROUND, notif)
@@ -116,13 +122,13 @@ class AlertForegroundService : Service() {
     private suspend fun pulseRelayAndBeep(type: AlertType) {
         val pulseOnMs = 100L
         val pulseOffMs = 500L
-        val cycles = 5 // Повторяем 5 раз
+        val cycles = 2 // Повторяем 5 раз
 
         val repo = AppContainer.getRepo()
         // Берем ID устройства из репозитория (первое попавшееся или конкретное)
         val targetDeviceId = repo?.getSnapshot()?.keys?.firstOrNull()
         // Какое реле использовать для сирены? Например, "r1"
-        val relayName = "r1" 
+        val relayName = "r3"
 
         repeat(cycles) {
             // ВКЛЮЧИТЬ

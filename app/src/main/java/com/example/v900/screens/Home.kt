@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -18,6 +20,7 @@ import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.v900.R
 import com.example.v900.data.AppContainer
@@ -112,10 +115,15 @@ fun HomeScreen(
                 .weight(15f)
         ) {
             val r1State = Sensors?.relays?.get("r1") ?: false
-
+            val r2State = Sensors?.relays?.get("r2") ?: false
             Button(onClick = { viewModel.toggleRelay("Sensors", "r1", !r1State) })
             {
-                Text(if (r1State) "R1 ON" else "R1 OFF", color = Blue)
+                Text(if (r1State) "ON" else "OFF", color = Blue)
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(onClick = { viewModel.toggleRelay("Sensors", "r2", !r2State) })
+            {
+                Text(if (r2State) "ON" else "OFF", color = Blue)
             }
         }
     }

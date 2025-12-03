@@ -39,7 +39,7 @@ class ForegroundCommService : Service() {
     override fun onCreate() {
         super.onCreate()
         prefs = PrefsManager(applicationContext)
-        acquireLocks()
+        //acquireLocks()
         startForegroundServiceNotification()
         serviceScope.launch {
             initServer()
@@ -55,7 +55,7 @@ class ForegroundCommService : Service() {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock =
                 powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "V900:ServerWakeLock")
-            wakeLock?.acquire(1 * 60 * 1000L /*10 minutes*/)
+            wakeLock?.acquire(1 * 1 * 1L /*10 minutes*/)
 
             val wifiManager =
                 applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -86,12 +86,10 @@ class ForegroundCommService : Service() {
     }
 
     private fun startForegroundServiceNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                NotificationChannel(CHANNEL_ID, "Comm Service", NotificationManager.IMPORTANCE_LOW)
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
-        }
+        val channel =
+            NotificationChannel(CHANNEL_ID, "Comm Service", NotificationManager.IMPORTANCE_LOW)
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(channel)
         startForeground(NOTIFICATION_ID, buildNotification("Сервер связи запущен"))
     }
 
@@ -136,6 +134,7 @@ class ForegroundCommService : Service() {
                     }
                 },
                 onState = { id, json ->
+                    Log.d(TAG, "onState: $id -> $json")
                     if (::deviceRepo.isInitialized) {
                         val payload = if (json.has("payload")) {
                             json.getAsJsonObject("payload")
@@ -152,9 +151,8 @@ class ForegroundCommService : Service() {
             deviceRepo = DeviceRepository(server, prefs)
             AppContainer.setRepo(deviceRepo)
 
-            Log.i(TAG, "About to start ServerSocketManager on port $port")
+            Log.i(TAG, "ServerSocketManager start on port $port")
             server.start()
-            Log.i(TAG, "ServerSocketManager.start() returned — server should be listening now")
 
         } catch (ex: Exception) {
             Log.e(TAG, "initServer failed: ${ex.message}", ex)
@@ -173,16 +171,16 @@ class ForegroundCommService : Service() {
 
         // Логика тревог
         if (fuel != null) {
-            if (fuel < 50) alertMessage = "Критически низкий уровень топлива: $fuel%"
+            if (fuel < 80) alertMessage = "Критически низкий уровень топлива: $fuel%"
             // else if (fuel > 95) alertMessage = "Бак топлива переполнен: $fuel%"
         }
 
         if (fresh != null && alertMessage == null) {
-            if (fresh < 50) alertMessage = "Мало пресной воды: $fresh%"
+            if (fresh < 10) alertMessage = "Мало пресной воды: $fresh%"
         }
 
         if (black != null && alertMessage == null) {
-            if (black > 10) alertMessage = "Бак сточных вод полон: $black%"
+            if (black > 5) alertMessage = "Бак сточных вод полон: $black%"
         }
 
         if (alertMessage != null) {

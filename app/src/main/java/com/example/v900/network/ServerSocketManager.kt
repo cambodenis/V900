@@ -245,7 +245,6 @@ class ServerSocketManager(
                             when (json.get("type")?.asString) {
                                 "telemetry" -> onTelemetry(deviceId, json)
                                 "state" -> onState(deviceId, json)
-                                "ack" -> Log.d(TAG, "ACK $deviceId")
                                 else -> Log.d(TAG, "Unknown type from $deviceId: $msg")
                             }
                         } else {
@@ -279,7 +278,10 @@ class ServerSocketManager(
 
     suspend fun sendCommand(deviceId: String, commandJson: String): Boolean {
         val conn = connections[deviceId] ?: return false
-        Log.i("toggleRelay", "ServerSocket.sendRelayCommand: $deviceId, $String, $commandJson")
+        Log.i(
+            "ServerSocket",
+            "ServerSocket.sendRelayCommand: $deviceId, $String, $commandJson, $conn"
+        )
 
         return try {
             withContext(Dispatchers.IO) {

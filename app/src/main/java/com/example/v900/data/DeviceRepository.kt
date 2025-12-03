@@ -55,43 +55,6 @@ class DeviceRepository(
         }
     }
 
-    suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
-        Log.i("toggleRelay", "DevicePero.sendRelayCommand: $deviceId, $String, $value")
-
-        val json = JsonObject().apply {
-            addProperty("type", "command")
-            addProperty("deviceId", deviceId)
-            addProperty("command", "relay")
-            val payload = JsonObject()
-            payload.addProperty("relay", relay)
-            payload.addProperty("value", value)
-            add("payload", payload)
-        }
-
-        // Отправляем команду через server
-        return server.sendCommand(deviceId, json.toString())
-    }
-
-    suspend fun toggleRelay(deviceId: String, relay: String, value: Boolean) {
-        // 1. Save state locally in prefs
-        prefs.saveRelayState(deviceId, relay, value)
-        Log.i("toggleRelay", "DevicePero.toggleRelay: $deviceId, $String, $value")
-
-        // 2. Send command
-        sendRelayCommand(deviceId, relay, if (value) 1 else 0)
-
-        // 3. Update local state for UI
-        mutex.withLock {
-            val current = _devices.value[deviceId]
-            if (current != null) {
-                val updatedRelays = current.relays.toMutableMap()
-                updatedRelays[relay] = value
-                val new = current.copyWithState(relays = updatedRelays)
-                _devices.value = _devices.value.toMutableMap().also { it[deviceId] = new }
-            }
-        }
-    }
-
     suspend fun updateState(deviceId: String, payload: JsonObject) {
         try {
             val relays = mutableMapOf<String, Boolean>()
@@ -112,6 +75,49 @@ class DeviceRepository(
         } catch (e: Exception) {
             Log.e(TAG, "updateState error: ${e.message}", e)
         }
+    }
+
+    suspend fun toggleRelay(deviceId: String, relay: String, value: Boolean) {
+        // 1. Save state locally in prefs
+        prefs.saveRelayState(deviceId, relay, value)
+        Log.i(TAG, "toggleRelay: $deviceId, $relay, $value")
+
+        // 2. Send command
+        sendRelayCommand(deviceId, relay, if (value) 1 else 0)
+
+        // 3. Update local state for UI
+
+        mutex.withLock {
+            val current = _devices.value[deviceId]
+            if (current != null) {
+                val updatedRelays = current.relays.toMutableMap()
+                updatedRelays[relay] = value
+                val new = current.copyWithState(relays = updatedRelays)
+                _devices.value = _devices.value.toMutableMap().also { it[deviceId] = new }
+            }
+        }
+
+
+    }
+
+    suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
+        Log.i(TAG, "sendRelayCommand: $deviceId, $relay, $value")
+
+        val json = JsonObject().apply {
+            addProperty("type", "command")
+            addProperty("deviceId", deviceId)
+            addProperty("command", "relay")
+            val payload = JsonObject()
+            payload.addProperty("relay", relay)
+            payload.addProperty("value", value)
+            add("payload", payload)
+        }
+
+        val jsonString = json.toString()
+        Log.i(TAG, "Sending to $deviceId: $jsonString")
+
+        // Отправляем команду через server
+        return server.sendCommand(deviceId, jsonString)
     }
 
     fun getSnapshot(): Map<String, DeviceState> = _devices.value
