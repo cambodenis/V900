@@ -114,7 +114,7 @@ class AlertForegroundService : Service() {
 
 
     private suspend fun pulseRelayAndBeep(type: AlertType) {
-        val pulseOnMs = 500L
+        val pulseOnMs = 100L
         val pulseOffMs = 500L
         val cycles = 5 // Повторяем 5 раз
 
@@ -134,7 +134,7 @@ class AlertForegroundService : Service() {
                 }
             }
 
-            toneGenerator?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 300)
+            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
             delay(pulseOnMs)
 
             // ВЫКЛЮЧИТЬ

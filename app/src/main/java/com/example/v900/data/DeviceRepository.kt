@@ -56,6 +56,8 @@ class DeviceRepository(
     }
 
     suspend fun sendRelayCommand(deviceId: String, relay: String, value: Int): Boolean {
+        Log.i("toggleRelay", "DevicePero.sendRelayCommand: $deviceId, $String, $value")
+
         val json = JsonObject().apply {
             addProperty("type", "command")
             addProperty("deviceId", deviceId)
@@ -73,6 +75,7 @@ class DeviceRepository(
     suspend fun toggleRelay(deviceId: String, relay: String, value: Boolean) {
         // 1. Save state locally in prefs
         prefs.saveRelayState(deviceId, relay, value)
+        Log.i("toggleRelay", "DevicePero.toggleRelay: $deviceId, $String, $value")
 
         // 2. Send command
         sendRelayCommand(deviceId, relay, if (value) 1 else 0)

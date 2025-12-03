@@ -5,7 +5,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 
 object NotificationHelper {
     // Изменил ID канала, чтобы сбросить настройки на устройстве
@@ -14,20 +13,18 @@ object NotificationHelper {
     const val NOTIF_ID_FOREGROUND = 1001
 
     fun createChannel(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH // Важно для FullScreenIntent
-            ).apply {
-                description = "Critical alerts for V900"
-                importance = NotificationManager.IMPORTANCE_HIGH
-                setSound(null, null) // Звук играем сами через ToneGenerator/MediaPlayer
-                enableVibration(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC // Видно на экране блокировки
-            }
-            val nm = context.getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH // Важно для FullScreenIntent
+        ).apply {
+            description = "Critical alerts for V900"
+            importance = NotificationManager.IMPORTANCE_HIGH
+            setSound(null, null) // Звук играем сами через ToneGenerator/MediaPlayer
+            enableVibration(true)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC // Видно на экране блокировки
         }
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(channel)
     }
 }

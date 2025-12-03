@@ -173,16 +173,16 @@ class ForegroundCommService : Service() {
 
         // Логика тревог
         if (fuel != null) {
-            if (fuel < 10) alertMessage = "Критически низкий уровень топлива: $fuel%"
+            if (fuel < 50) alertMessage = "Критически низкий уровень топлива: $fuel%"
             // else if (fuel > 95) alertMessage = "Бак топлива переполнен: $fuel%"
         }
 
         if (fresh != null && alertMessage == null) {
-            if (fresh < 10) alertMessage = "Мало пресной воды: $fresh%"
+            if (fresh < 50) alertMessage = "Мало пресной воды: $fresh%"
         }
 
         if (black != null && alertMessage == null) {
-            if (black > 80) alertMessage = "Бак сточных вод полон: $black%"
+            if (black > 10) alertMessage = "Бак сточных вод полон: $black%"
         }
 
         if (alertMessage != null) {

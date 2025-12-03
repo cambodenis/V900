@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.v900.R
 import com.example.v900.data.AppContainer
 import com.example.v900.screens.utils.TankLevelWidget
+import com.example.v900.ui.theme.Blue
 import com.example.v900.ui.theme.FuelGauge
 import com.example.v900.ui.theme.GrayGauge
 import com.example.v900.ui.theme.WaterGauge
@@ -33,12 +34,12 @@ fun HomeScreen(
     val repo = AppContainer.getRepo()
     val devices by viewModel.devices.collectAsState()
     // Явно указываем тип it, чтобы компилятор мог его вывести
-    val Sensor = devices.find { it: DeviceUiModel -> it.id == "Sensor" }
+    val Sensors = devices.find { it: DeviceUiModel -> it.id == "Sensors" }
     val Relay = devices.find { it: DeviceUiModel -> it.id == "Relay" }
 
     val fuel = Relay?.fuel?.toInt() ?: 0
-    val fresh = Relay?.fresh_water?.toInt() ?: 0
-    val black = Relay?.black_water?.toInt() ?: 0
+    val fresh = Sensors?.fresh_water?.toInt() ?: 0
+    val black = Sensors?.black_water?.toInt() ?: 0
 
     Row(
         modifier = Modifier
@@ -110,11 +111,11 @@ fun HomeScreen(
                 .fillMaxHeight()
                 .weight(15f)
         ) {
-            val r1State = Relay?.relays?.get("r1") ?: false
+            val r1State = Sensors?.relays?.get("r1") ?: false
 
-            Button(onClick = { viewModel.toggleRelay("Relay", "r1", !r1State) })
+            Button(onClick = { viewModel.toggleRelay("Sensors", "r1", !r1State) })
             {
-                Text(if (r1State) "R1 ON" else "R1 OFF")
+                Text(if (r1State) "R1 ON" else "R1 OFF", color = Blue)
             }
         }
     }

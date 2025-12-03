@@ -279,6 +279,8 @@ class ServerSocketManager(
 
     suspend fun sendCommand(deviceId: String, commandJson: String): Boolean {
         val conn = connections[deviceId] ?: return false
+        Log.i("toggleRelay", "ServerSocket.sendRelayCommand: $deviceId, $String, $commandJson")
+
         return try {
             withContext(Dispatchers.IO) {
                 val bytes = commandJson.toByteArray(Charsets.UTF_8)
